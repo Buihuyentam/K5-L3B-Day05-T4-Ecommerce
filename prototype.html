@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trợ lý khiếu nại | Prototype T4</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17231f;
+      --muted: #64736d;
+      --line: #e0e8e3;
+      --paper: #ffffff;
+      --canvas: #f3f7f4;
+      --green: #087c59;
+      --green-soft: #e8f5ef;
+      --amber: #966312;
+      --amber-soft: #fff4d9;
+      --red: #a23d32;
+      --red-soft: #fff0ed;
+      --shadow: 0 16px 40px rgba(29, 58, 45, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 15px/1.5 "Segoe UI", Arial, sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .app {
+      width: min(1120px, calc(100% - 32px));
+      margin: 28px auto 48px;
+    }
+
+    .topbar, .case-heading, .section-heading, .stepper, .toolbar, .message-heading,
+    .evidence-heading, .decision-actions, .event, .summary-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar, .case-heading, .section-heading, .toolbar, .message-heading,
+    .evidence-heading, .event, .summary-row {
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 750;
+      letter-spacing: -.02em;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 11px;
+      background: var(--green);
+      color: #fff;
+      font-size: 19px;
+    }
+
+    .mock-label, .eyebrow, .tag, .status, .step {
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mock-label {
+      padding: 7px 11px;
+      background: #e8edeb;
+      color: #53615b;
+    }
+
+    .case-heading { margin: 28px 0 18px; align-items: flex-end; }
+    h1 { margin: 4px 0 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.15; letter-spacing: -.04em; }
+    h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    h3 { margin: 0 0 8px; font-size: 14px; }
+    p { margin: 0; }
+    .eyebrow { color: var(--green); text-transform: uppercase; letter-spacing: .08em; }
+    .muted, .caption { color: var(--muted); }
+    .caption { font-size: 12px; }
+
+    .stepper {
+      gap: 8px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--paper);
+    }
+
+    .step {
+      border: 0;
+      padding: 10px 15px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .step[aria-current="step"] { background: var(--green); color: #fff; }
+    .screen[hidden] { display: none; }
+
+    .case-card, .panel, .message-card, .evidence-card, .review-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .case-card { margin-bottom: 16px; padding: 16px 20px; }
+    .case-id { font-weight: 750; }
+    .tag { padding: 5px 9px; background: #f1f4f2; color: #586760; }
+    .status { padding: 6px 10px; background: var(--amber-soft); color: var(--amber); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel { overflow: hidden; }
+    .panel-header { padding: 17px 20px; border-bottom: 1px solid var(--line); }
+    .panel-body { padding: 20px; }
+    .toolbar { margin-bottom: 18px; }
+    .segmented { display: flex; padding: 3px; border-radius: 10px; background: #f0f4f1; }
+    .segmented button {
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 11px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .segmented button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 5px #14271a1a; }
+    .chat { display: grid; gap: 12px; }
+    .bubble {
+      max-width: 88%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 4px 15px 15px;
+      background: #f7f9f8;
+    }
+
+    .bubble.ai { border-color: #d3eadc; background: var(--green-soft); }
+    .bubble.user { justify-self: end; border-radius: 15px 4px 15px 15px; background: #eff3f9; }
+    .message-heading { margin-bottom: 5px; font-size: 12px; font-weight: 700; }
+    .bubble p { font-size: 14px; }
+    .evidence-list { display: grid; gap: 10px; }
+    .evidence-card { padding: 14px; box-shadow: none; border-radius: 13px; }
+    .evidence-heading { align-items: flex-start; }
+    .evidence-value { margin-top: 6px; font-size: 18px; font-weight: 750; }
+    .source { margin-top: 6px; color: var(--muted); font-size: 12px; }
+    .alert {
+      margin-top: 14px;
+      padding: 13px 14px;
+      border: 1px solid #f1d88f;
+      border-radius: 13px;
+      background: var(--amber-soft);
+      color: #694808;
+    }
+
+    .alert strong { display: block; margin-bottom: 3px; }
+    .deadline { display: grid; gap: 5px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .deadline strong { font-size: 14px; }
+    .button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 9px 13px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .button:hover { border-color: #8db9a4; }
+    .button.primary { border-color: var(--green); background: var(--green); color: #fff; }
+    .button.danger { border-color: #e6b6af; color: var(--red); }
+    .full { width: 100%; margin-top: 12px; }
+    .privacy-note { margin-top: 12px; font-size: 12px; color: var(--muted); }
+    .seller-response { margin-top: 14px; padding: 13px 14px; border-left: 3px solid #9aacc2; border-radius: 0 11px 11px 0; background: #f3f6fa; }
+    .seller-response p { margin-top: 5px; font-size: 14px; }
+
+    .review-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr);
+      gap: 16px;
+    }
+
+    .review-card { padding: 20px; }
+    .review-card + .review-card { margin-top: 16px; }
+    .summary-list { display: grid; gap: 0; margin-top: 10px; }
+    .summary-row { padding: 11px 0; border-bottom: 1px solid var(--line); align-items: flex-start; }
+    .summary-row:last-child { border-bottom: 0; }
+    .summary-row span:first-child { color: var(--muted); }
+    .summary-row strong { text-align: right; }
+    .timeline { display: grid; gap: 0; margin-top: 12px; }
+    .event { justify-content: flex-start; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .event:last-child { border-bottom: 0; }
+    .event time { min-width: 108px; color: var(--muted); font-size: 12px; }
+    .decision-actions { gap: 9px; flex-wrap: wrap; margin-top: 15px; }
+    .decision-actions .button { flex: 1 1 130px; }
+    .decision-log { margin-top: 14px; padding: 12px; border-radius: 11px; background: #f3f6f4; font-size: 13px; }
+    .footer-note { margin-top: 18px; text-align: center; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 800px) {
+      .layout, .review-layout { grid-template-columns: 1fr; }
+      .case-heading { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (max-width: 500px) {
+      .app { width: min(100% - 20px, 1120px); margin-top: 16px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .stepper { width: 100%; }
+      .step { flex: 1; }
+      .panel-body, .review-card { padding: 15px; }
+      .case-card { padding: 14px; }
+      .case-card .case-heading { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">S</span><span>Trung tâm xử lý khiếu nại</span></div>
+      <span class="mock-label">Prototype · dữ liệu dựng · không giao dịch thật</span>
+    </header>
+
+    <div class="case-heading">
+      <div>
+        <p class="eyebrow">T4 · Hàng không đúng mô tả</p>
+        <h1>Hồ sơ khiếu nại</h1>
+      </div>
+      <nav class="stepper" aria-label="Các màn hình prototype">
+        <button class="step" type="button" data-screen-button="intake" aria-current="step">1. Hội thoại</button>
+        <button class="step" type="button" data-screen-button="review">2. Nhân viên xem xét</button>
+      </nav>
+    </div>
+
+    <section class="case-card" aria-label="Thông tin hồ sơ">
+      <div class="case-heading" style="margin:0; align-items:center">
+        <div>
+          <div class="case-id">Đơn #SP-10482 <span class="tag">Nồi chiên</span></div>
+          <p class="caption" style="margin-top:5px">Người mua: Minh Anh · Shop: Bếp Nhà Mình</p>
+        </div>
+        <span class="status">Chưa đủ căn cứ · Chưa có quyết định</span>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-intake" aria-label="Màn hình hội thoại và bằng chứng">
+      <div class="layout">
+        <article class="panel">
+          <div class="panel-header section-heading">
+            <div>
+              <h2>Trao đổi về khiếu nại</h2>
+              <p class="caption">Cùng hồ sơ, không chia sẻ thông tin liên lạc riêng</p>
+            </div>
+            <div class="segmented" role="group" aria-label="Góc nhìn">
+              <button type="button" data-view="buyer" aria-pressed="true">Người mua</button>
+              <button type="button" data-view="seller" aria-pressed="false">Người bán</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="chat" id="conversation" aria-live="polite">
+              <div class="bubble user">
+                <div class="message-heading"><span>Minh Anh · Người mua</span><time>09:12</time></div>
+                <p>Tôi đặt nồi chiên theo mô tả 6 lít nhưng lòng nồi chỉ 5 lít. Tôi muốn trả hàng.</p>
+              </div>
+              <div class="bubble ai">
+                <div class="message-heading"><span>Trợ lý khiếu nại</span><time>09:13</time></div>
+                <p>Bạn gửi giúp mình ảnh nhãn dung tích trên sản phẩm nhé. Mình sẽ đối chiếu với mô tả được lưu cùng đơn hàng.</p>
+              </div>
+              <div class="bubble user">
+                <div class="message-heading"><span>Minh Anh · Người mua</span><time>09:14</time></div>
+                <p>Đã gửi ảnh nhãn: 5 L.</p>
+              </div>
+              <div class="bubble ai">
+                <div class="message-heading"><span>Trợ lý khiếu nại</span><time>09:15</time></div>
+                <p>Mình chưa thể kết luận: ảnh tem 5 L khớp snapshot gắn với đơn (5 L), nhưng mô tả hiện tại là 6 L và có chỉnh sửa sau khi đặt. Mình đã chuyển hồ sơ để nhân viên kiểm tra lịch sử. Chưa có quyết định hoàn hay từ chối.</p>
+              </div>
+              <div class="seller-response" id="seller-response" hidden>
+                <strong>Phản hồi shop · 10:05</strong>
+                <p>Đơn được đặt khi thông tin là 5 L. Shop cập nhật mô tả lên 6 L sau đó; ảnh tem của sản phẩm là 5 L.</p>
+              </div>
+            </div>
+            <div class="alert" role="status">
+              <strong>Chưa đủ căn cứ để quyết định</strong>
+              Snapshot và ảnh tem ghi 5 L; listing hiện tại ghi 6 L. Nhân viên cần kiểm tra lịch sử chỉnh sửa trước khi kết luận.
+            </div>
+            <button class="button primary full" type="button" data-screen-button="review">Xem hồ sơ nhân viên đang nhận</button>
+          </div>
+        </article>
+
+        <aside class="panel" aria-label="Bằng chứng và thời hạn">
+          <div class="panel-header">
+            <h2>Bằng chứng & thời hạn</h2>
+            <p class="caption">Nguồn hiển thị cạnh từng thông tin</p>
+          </div>
+          <div class="panel-body">
+            <div class="evidence-list">
+              <div class="evidence-card">
+                <div class="evidence-heading"><strong>Listing lúc đặt</strong><span class="tag">Snapshot đơn</span></div>
+                <div class="evidence-value">Dung tích: 5 L</div>
+                <p class="source">10/11/2026 · Gắn với đơn hàng</p>
+              </div>
+              <div class="evidence-card">
+                <div class="evidence-heading"><strong>Listing hiện tại</strong><span class="tag">Đã cập nhật</span></div>
+                <div class="evidence-value">Dung tích: 6 L</div>
+                <p class="source">12/11/2026 · Sau thời điểm đặt</p>
+              </div>
+              <div class="evidence-card">
+                <div class="evidence-heading"><strong>Ảnh nhãn sản phẩm</strong><span class="tag">Đã nhận</span></div>
+                <div class="evidence-value">Nhãn: 5 L</div>
+                <p class="source">Người mua gửi · 09:14</p>
+              </div>
+            </div>
+            <div class="deadline">
+              <span class="caption">Hạn phản hồi shop · fixture minh họa</span>
+              <strong>14/11/2026, 10:05 · Còn 23 giờ</strong>
+            </div>
+            <p class="privacy-note">Hai bên chỉ trao đổi trong nền tảng. Hết hạn sẽ chuyển nhân viên, không tự động hoàn hoặc từ chối.</p>
+            <button class="button full" type="button" id="request-evidence">Kiểm tra trạng thái bằng chứng</button>
+            <p class="caption" id="evidence-feedback" role="status" aria-live="polite" style="margin-top:8px"></p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-review" aria-label="Màn hình nhân viên xem xét" hidden>
+      <div class="review-layout">
+        <div>
+          <article class="review-card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Hồ sơ cần xem xét</p>
+                <h2 style="margin-top:4px">Tóm tắt bằng chứng</h2>
+              </div>
+              <span class="status">Độ chắc chắn thấp</span>
+            </div>
+            <div class="summary-list">
+              <div class="summary-row"><span>Khiếu nại</span><strong>Listing ghi 6 L, lòng nồi 5 L</strong></div>
+              <div class="summary-row"><span>Snapshot lúc đặt</span><strong>5 L · 10/11</strong></div>
+              <div class="summary-row"><span>Listing hiện tại</span><strong>6 L · sửa 12/11</strong></div>
+              <div class="summary-row"><span>Ảnh nhãn</span><strong>5 L · đã nhận</strong></div>
+              <div class="summary-row"><span>Người bán</span><strong>Đã phản hồi · 10:05</strong></div>
+            </div>
+            <div class="alert">
+              <strong>Rủi ro: mô tả chỉnh sau khi đặt</strong>
+              Không dùng listing hiện tại làm bằng chứng về nội dung người mua đã thấy. Kiểm tra snapshot và lịch sử chỉnh sửa trước khi quyết định.
+            </div>
+          </article>
+
+          <article class="review-card">
+            <h2>Dòng thời gian</h2>
+            <div class="timeline">
+              <div class="event"><time>10/11 · 09:30</time><span>Đơn đặt — snapshot ghi 5 L</span></div>
+              <div class="event"><time>12/11 · 16:20</time><span>Listing hiện tại cập nhật thành 6 L</span></div>
+              <div class="event"><time>13/11 · 09:12</time><span>Người mua gửi khiếu nại</span></div>
+              <div class="event"><time>13/11 · 10:05</time><span>Shop phản hồi trong hạn</span></div>
+              <div class="event"><time>13/11 · 10:08</time><span>AI chuyển hồ sơ; chưa có quyết định</span></div>
+            </div>
+          </article>
+        </div>
+
+        <aside>
+          <article class="review-card">
+            <h2>Quyết định của nhân viên</h2>
+            <p class="caption" style="margin-top:6px">AI chỉ tóm tắt và chuyển hồ sơ. Chọn hành động là mô phỏng quyết định của người duyệt.</p>
+            <div class="decision-actions">
+              <button class="button primary" type="button" data-decision="Đề xuất hoàn tiền">Duyệt hoàn tiền</button>
+              <button class="button danger" type="button" data-decision="Đề xuất từ chối">Từ chối khiếu nại</button>
+              <button class="button" type="button" data-decision="Chuyển trưởng nhóm">Chuyển trưởng nhóm</button>
+            </div>
+            <div class="decision-log" id="decision-log" role="status" aria-live="polite">Chưa có quyết định. Lựa chọn tại đây chỉ được ghi vào prototype.</div>
+          </article>
+          <article class="review-card">
+            <h2>Kiểm tra trước khi quyết định</h2>
+            <div class="summary-list">
+              <div class="summary-row"><span>Snapshot của đúng đơn?</span><strong>Cần xác minh</strong></div>
+              <div class="summary-row"><span>Lịch sử sửa đổi?</span><strong>Kiểm tra mốc 12/11</strong></div>
+              <div class="summary-row"><span>Hai bên đã phản hồi?</span><strong>Đã có</strong></div>
+              <div class="summary-row"><span>Thông tin liên lạc riêng?</span><strong>Không hiển thị</strong></div>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </section>
+
+    <p class="footer-note">Bản mô phỏng tĩnh cho thảo luận thiết kế · Không thực hiện hoàn tiền, từ chối khiếu nại hoặc gửi thông báo thật.</p>
+  </main>
+
+  <script>
+    const screenButtons = document.querySelectorAll("[data-screen-button]");
+    const screens = {
+      intake: document.getElementById("screen-intake"),
+      review: document.getElementById("screen-review")
+    };
+
+    function showScreen(name) {
+      Object.keys(screens).forEach((key) => {
+        screens[key].hidden = key !== name;
+      });
+      document.querySelectorAll(".stepper [data-screen-button]").forEach((button) => {
+        if (button.dataset.screenButton === name) {
+          button.setAttribute("aria-current", "step");
+        } else {
+          button.removeAttribute("aria-current");
+        }
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    screenButtons.forEach((button) => {
+      button.addEventListener("click", () => showScreen(button.dataset.screenButton));
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const isSeller = button.dataset.view === "seller";
+        document.querySelectorAll("[data-view]").forEach((item) => {
+          item.setAttribute("aria-pressed", String(item === button));
+        });
+        document.getElementById("seller-response").hidden = !isSeller;
+      });
+    });
+
+    document.getElementById("request-evidence").addEventListener("click", () => {
+      document.getElementById("evidence-feedback").textContent =
+        "Đã nhận ảnh nhãn 5 L lúc 09:14. Nhân viên đang xác minh snapshot; không cần gửi lại ảnh này.";
+    });
+
+    document.querySelectorAll("[data-decision]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.getElementById("decision-log").textContent =
+          "Mô phỏng: Nhân viên chọn “" + button.dataset.decision +
+          "”. Chưa có giao dịch hoặc thay đổi hồ sơ thật.";
+      });
+    });
+  </script>
+</body>
+</html>
